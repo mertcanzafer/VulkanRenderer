@@ -17,6 +17,15 @@
 
 #include <iostream>
 
+#define VK_CHECK(vk)                    \
+    do {                                \
+        VkResult err = vk;              \
+        if (err != VK_SUCCESS) {        \
+            std::cerr << "Detected Vulkan error: " << err << std::endl; \
+            abort();                    \
+        }                               \
+    } while(0)
+
 int main()
 {
 	constexpr int32_t width{ 1280 }, height{ 720 };
@@ -56,7 +65,7 @@ int main()
 	// Vulkan extension check code
 	uint32_t extensionCount{ 0 };
 	// Getting the amount for no particular layer and not storing any properties anywhere!
-	vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr); 
+	VK_CHECK( vkEnumerateInstanceExtensionProperties(nullptr, &extensionCount, nullptr) ); 
 	std::cout << "Extension count { " << extensionCount << " }\n";
 
 	// Check out glm functions working conditions
