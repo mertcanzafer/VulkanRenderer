@@ -31,7 +31,7 @@ void HelloTriangleApplication::InitWindow()
 
 void HelloTriangleApplication::InitVulkan()
 {
-	// TODO: Empty for now!!
+	CreateVinstance();
 }
 
 void HelloTriangleApplication::MainLoop()
@@ -44,6 +44,8 @@ void HelloTriangleApplication::MainLoop()
 
 void HelloTriangleApplication::CleanUp()
 {
+	vkDestroyInstance(m_Instance, nullptr);
+
 	if (m_pWindow)
 		glfwDestroyWindow(m_pWindow);
 	glfwTerminate();
@@ -65,4 +67,38 @@ void HelloTriangleApplication::ChangeWindowIcon()
 
 	glfwSetWindowIcon(m_pWindow, 1, images);
 	stbi_image_free(pixels);
+}
+
+void HelloTriangleApplication::CreateVinstance()
+{
+	// Fill the application info struct!!!
+	VkApplicationInfo appInfo = {};
+	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.pApplicationName = "Hello Triangle";
+	appInfo.pEngineName = "No Engine";
+	appInfo.engineVersion = VK_MAKE_VERSION( 1,0,0 );
+	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
+	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
+	appInfo.pNext = nullptr;
+
+	// Fill the InstanceCreateInfo struct to tell Vk driver ...- 
+	// where to use which valdation layers and extensions will be used.
+	VkInstanceCreateInfo instInfo = {};
+	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
+	instInfo.pApplicationInfo = &appInfo;
+
+	uint32_t glfwExtensionCount = 0u;
+	const char** ppGlfwExtensions = nullptr;
+
+	ppGlfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+	instInfo.enabledExtensionCount = glfwExtensionCount;
+	instInfo.ppEnabledExtensionNames = ppGlfwExtensions;
+
+	// Last 2 members of the struct specify the global validation layers to enable
+	instInfo.enabledLayerCount = 0u;
+	instInfo.pNext = nullptr;
+
+	// Creating the instance with given info
+	VK_EXCEPT_MACRO( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
 }

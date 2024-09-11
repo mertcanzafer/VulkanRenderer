@@ -24,6 +24,13 @@ private:
 	void MainLoop();
 	void CleanUp();
 	void ChangeWindowIcon(); // For Changing window icon!!
+	void CreateVinstance();
 private:
 	GLFWwindow* m_pWindow = nullptr;
+
+	// Declare the vulkan instance
+	VkInstance m_Instance;
 };
+
+// Define a Macro helper
+#define VK_EXCEPT_MACRO(vk)	 if(vk != VK_SUCCESS)	throw std::runtime_error("Failed to create instance\n")
