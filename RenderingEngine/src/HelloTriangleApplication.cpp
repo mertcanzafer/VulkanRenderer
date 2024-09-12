@@ -2,6 +2,27 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 
+#ifdef NDEBUG // If not in debug mode.
+	const bool enableValidationLayers{ false };
+#else // in debug mode
+	const bool enableValidationLayers{ true };
+#endif
+
+// Define Macro helpers
+#define VK_EXCEPT_MACRO(vk)	 if(vk != VK_SUCCESS)	throw std::runtime_error("Failed to create instance\n")
+
+#define VK_EXCEPT(vk)					\
+do {									\
+	VkResult result = vk;				\
+	std::string to_string = string_VkResult(result);\
+													\
+	if (result != VK_SUCCESS)						\
+	{												\
+		std::string error = "Detected Vulkan error { " + to_string + " }"; \
+		throw  std::runtime_error(error);			\
+	}												\
+}while(0)
+
 void HelloTriangleApplication::Run()
 {
 	InitWindow();
@@ -101,4 +122,13 @@ void HelloTriangleApplication::CreateVinstance()
 
 	// Creating the instance with given info
 	VK_EXCEPT_MACRO( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
+}
+
+bool HelloTriangleApplication::CheckValidationLayerSupport()
+{
+	uint32_t layerCount{ 0u };
+
+	VK_EXCEPT( vkEnumerateInstanceLayerProperties(&layerCount, nullptr) );
+
+	// TODO Go through all LunarG validation layers support
 }

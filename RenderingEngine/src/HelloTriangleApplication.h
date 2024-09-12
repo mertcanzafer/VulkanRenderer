@@ -9,6 +9,9 @@
 #include <iostream>
 #include <stdexcept>
 #include <cstdlib>
+#include <vector>
+#include <string>
+#include <vulkan\vk_enum_string_helper.h>
 
 const uint32_t width = 1280u, height = 720u;
 
@@ -25,12 +28,16 @@ private:
 	void CleanUp();
 	void ChangeWindowIcon(); // For Changing window icon!!
 	void CreateVinstance();
+
+	bool CheckValidationLayerSupport();
 private:
 	GLFWwindow* m_pWindow = nullptr;
 
 	// Declare the vulkan instance
 	VkInstance m_Instance;
-};
 
-// Define a Macro helper
-#define VK_EXCEPT_MACRO(vk)	 if(vk != VK_SUCCESS)	throw std::runtime_error("Failed to create instance\n")
+	const std::vector<const char*> m_ValidationLayers
+	{
+		"VK_LAYER_KHRONOS_validation"
+	};
+};
