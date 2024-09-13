@@ -114,17 +114,20 @@ void HelloTriangleApplication::CreateVinstance()
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instInfo.pApplicationInfo = &appInfo;
 
-	uint32_t glfwExtensionCount = 0u;
-	const char** ppGlfwExtensions = nullptr;
+	auto extensions = GetRequiredExtensions();
+	instInfo.enabledExtensionCount = static_cast<uint32_t> (extensions.size());
+	instInfo.ppEnabledExtensionNames = extensions.data();
 
-	ppGlfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
-
-	instInfo.enabledExtensionCount = glfwExtensionCount;
-	instInfo.ppEnabledExtensionNames = ppGlfwExtensions;
-
-	// Last 2 members of the struct specify the global validation layers to enable
-	instInfo.enabledLayerCount = 0u;
-	instInfo.pNext = nullptr;
+	// Modify the instInfo struct
+	if (enableValidationLayers)
+	{
+		instInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
+		instInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+	}
+	else {
+		instInfo.enabledLayerCount = 0u;
+		instInfo.pNext = nullptr;
+	}
 
 	// Creating the instance with given info
 	VK_EXCEPT_MACRO( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
@@ -162,4 +165,19 @@ bool HelloTriangleApplication::CheckValidationLayerSupport()
 		}
 	}
 	return true;
+}
+
+std::vector<const char*> HelloTriangleApplication::GetRequiredExtensions()
+{
+	uint32_t glfwExtensionCount{ 0u };
+	const char** ppGlfwExtensions = nullptr;
+	ppGlfwExtensions = glfwGetRequiredInstanceExtensions(&glfwExtensionCount);
+
+	std::vector<const char*> extensions(ppGlfwExtensions, ppGlfwExtensions + glfwExtensionCount);
+
+	if (enableValidationLayers)
+	{
+		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
+	}
+	return extensions;
 }
