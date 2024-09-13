@@ -92,6 +92,12 @@ void HelloTriangleApplication::ChangeWindowIcon()
 
 void HelloTriangleApplication::CreateVinstance()
 {
+	// Check if all validation layers are supported
+	if (enableValidationLayers && !CheckValidationLayerSupport())
+	{
+		throw std::runtime_error("validation layers requested, but not available!");
+	}
+
 	// Fill the application info struct!!!
 	VkApplicationInfo appInfo = {};
 	appInfo.apiVersion = VK_API_VERSION_1_0;
@@ -129,6 +135,31 @@ bool HelloTriangleApplication::CheckValidationLayerSupport()
 	uint32_t layerCount{ 0u };
 
 	VK_EXCEPT( vkEnumerateInstanceLayerProperties(&layerCount, nullptr) );
+	
+	std::vector<VkLayerProperties> availableLayers(layerCount);
+	VK_EXCEPT( vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()) );
+	/*
+	* Check if all check if all of the layers in validationLayers exist in the availableLayers list.
+	* if not return false
+	*/
 
-	// TODO Go through all LunarG validation layers support
+	for (const auto& layer : this->m_ValidationLayers)
+	{
+		bool layerFound = false;
+		// Search layers inside the availableLayer
+
+		for (const auto& aLayer : availableLayers)
+		{
+			if (strcmp(layer, aLayer.layerName) == 0)
+			{
+				layerFound = true;
+				break;
+			}
+		}
+		if (!layerFound)
+		{
+			return false;
+		}
+	}
+	return true;
 }
