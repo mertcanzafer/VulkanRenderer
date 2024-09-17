@@ -64,6 +64,8 @@ private:
 		void* pUserData
 	);
 
+	void SetupDebugMessenger();
+
 private:
 	GLFWwindow* m_pWindow = nullptr;
 
@@ -74,4 +76,6 @@ private:
 	{
 		"VK_LAYER_KHRONOS_validation"
 	};
+	// Debug messager
+	VkDebugUtilsMessengerEXT m_Dmessenger;
 };

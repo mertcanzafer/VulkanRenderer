@@ -23,6 +23,9 @@ do {									\
 	}												\
 }while(0)
 
+static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
+											const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pDebugMessenger);
+
 void HelloTriangleApplication::Run()
 {
 	InitWindow();
@@ -53,6 +56,7 @@ void HelloTriangleApplication::InitWindow()
 void HelloTriangleApplication::InitVulkan()
 {
 	CreateVinstance();
+	SetupDebugMessenger();
 }
 
 void HelloTriangleApplication::MainLoop()
@@ -180,4 +184,47 @@ std::vector<const char*> HelloTriangleApplication::GetRequiredExtensions()
 		extensions.emplace_back(VK_EXT_DEBUG_UTILS_EXTENSION_NAME);
 	}
 	return extensions;
+}
+
+VKAPI_ATTR VkBool32 VKAPI_CALL HelloTriangleApplication::
+DebugCallback
+(
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
+	VkDebugUtilsMessageTypeFlagsEXT messageType, 
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
+	void* pUserData
+)
+{
+	std::cerr << "Validation layer: " << pCallbackData->pMessage << std::endl;
+	return VK_FALSE;
+}
+
+void HelloTriangleApplication::SetupDebugMessenger()
+{
+	if (!enableValidationLayers) return;
+	VkDebugUtilsMessengerCreateInfoEXT msgCreateInfo = {};
+
+	msgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	msgCreateInfo.messageSeverity = 0x00001101;
+	msgCreateInfo.messageType = 0x00000007;
+	msgCreateInfo.pfnUserCallback = DebugCallback;
+	msgCreateInfo.pNext = nullptr; // Optional
+
+	VK_EXCEPT( CreateDebugUtilsMessengerEXT(m_Instance,&msgCreateInfo,nullptr,&m_Dmessenger) );
+}
+
+VkResult CreateDebugUtilsMessengerEXT
+(
+	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
+	const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger
+)
+{
+	// - vkGetInstanceProcAddr will return nullptr, if the function couldn't be loaded
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	if (func)
+	{
+		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
+	}
+	else
+		return VK_ERROR_EXTENSION_NOT_PRESENT;
 }
