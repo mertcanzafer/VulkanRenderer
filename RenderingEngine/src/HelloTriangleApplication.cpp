@@ -1,6 +1,7 @@
 #include "HelloTriangleApplication.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
+#include <cassert>
 
 #ifdef NDEBUG // If not in debug mode.
 	const bool enableValidationLayers{ false };
@@ -23,8 +24,17 @@ do {									\
 	}												\
 }while(0)
 
+// Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
 static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
 											const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pDebugMessenger);
+
+// Function for loading the vkDestroyDebugUtilsMessengerEXT extension function.
+static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessanger,
+										const VkAllocationCallbacks * pAllocator);
+
+// Function for loading the vkSubmitDebugUtilsMessageEXT extension function.
+static void SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT * pCallbackData);
 
 void HelloTriangleApplication::Run()
 {
@@ -65,10 +75,21 @@ void HelloTriangleApplication::MainLoop()
 	{
 		glfwPollEvents();
 	}
+	// Test the code in order to see if the callback is working properly.
+	VkDebugUtilsMessengerCallbackDataEXT _debugCallback = {};
+	_debugCallback.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT;
+	_debugCallback.pMessage = "Testing DestroyDebug Callback\n";
+	SubmitDebugUtilsMessageEXT(m_Instance, 
+		static_cast<VkDebugUtilsMessageSeverityFlagBitsEXT>(VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT),
+		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT, &_debugCallback);
 }
 
 void HelloTriangleApplication::CleanUp()
 {
+	if (enableValidationLayers)
+	{
+		DestroyDebugUtilsMessengerEXT(m_Instance, m_Dmessenger, nullptr);
+	}
 	vkDestroyInstance(m_Instance, nullptr);
 
 	if (m_pWindow)
@@ -227,4 +248,43 @@ VkResult CreateDebugUtilsMessengerEXT
 	}
 	else
 		return VK_ERROR_EXTENSION_NOT_PRESENT;
+}
+
+void DestroyDebugUtilsMessengerEXT
+(
+	VkInstance instance, VkDebugUtilsMessengerEXT debugMessanger, const VkAllocationCallbacks* pAllocator
+)
+{
+	auto func = (PFN_vkDestroyDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkDestroyDebugUtilsMessengerEXT");
+	if (func)
+	{
+		func(instance, debugMessanger, pAllocator);
+	}
+	return;
+}
+
+void SubmitDebugUtilsMessageEXT
+(
+	VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
+	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
+{
+
+	auto func =(PFN_vkSubmitDebugUtilsMessageEXT) vkGetInstanceProcAddr(instance, "vkSubmitDebugUtilsMessageEXT");
+
+	if (func)
+		func(instance, messageSeverity, messageType, pCallbackData);
+	return;
+}
+
+void HelloTriangleApplication:: PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& DbgCrtInfo)
+{
+	DbgCrtInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
+	DbgCrtInfo.pNext = nullptr;
+	DbgCrtInfo.flags = 0;
+	DbgCrtInfo.messageSeverity = VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_SEVERITY_WARNING_BIT_EXT;
+	DbgCrtInfo.messageType = VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT |
+		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
+	DbgCrtInfo.pfnUserCallback = DebugCallback;
+	DbgCrtInfo.pUserData = nullptr;
 }

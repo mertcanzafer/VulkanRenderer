@@ -63,7 +63,7 @@ private:
 		const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 		void* pUserData
 	);
-
+	void PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& DbgCrtInfo);
 	void SetupDebugMessenger();
 
 private:
