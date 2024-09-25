@@ -75,13 +75,6 @@ void HelloTriangleApplication::MainLoop()
 	{
 		glfwPollEvents();
 	}
-	// Test the code in order to see if the callback is working properly.
-	VkDebugUtilsMessengerCallbackDataEXT _debugCallback = {};
-	_debugCallback.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CALLBACK_DATA_EXT;
-	_debugCallback.pMessage = "Testing DestroyDebug Callback\n";
-	SubmitDebugUtilsMessageEXT(m_Instance, 
-		static_cast<VkDebugUtilsMessageSeverityFlagBitsEXT>(VK_DEBUG_UTILS_MESSAGE_SEVERITY_INFO_BIT_EXT | VK_DEBUG_UTILS_MESSAGE_SEVERITY_ERROR_BIT_EXT),
-		VK_DEBUG_UTILS_MESSAGE_TYPE_GENERAL_BIT_EXT, &_debugCallback);
 }
 
 void HelloTriangleApplication::CleanUp()
@@ -139,15 +132,21 @@ void HelloTriangleApplication::CreateVinstance()
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instInfo.pApplicationInfo = &appInfo;
 
-	auto extensions = GetRequiredExtensions();
+;	auto extensions = GetRequiredExtensions();
 	instInfo.enabledExtensionCount = static_cast<uint32_t> (extensions.size());
 	instInfo.ppEnabledExtensionNames = extensions.data();
+
+	// Re-use DebugMessengerCreateInfo to be able to use it during VinstanceCreate and VinstanceDestroy
+	VkDebugUtilsMessengerCreateInfoEXT debugCreateInfo = {};
 
 	// Modify the instInfo struct
 	if (enableValidationLayers)
 	{
 		instInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 		instInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+
+		PopulateDebugMessengerCreateInfo(debugCreateInfo);
+		debugCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
 	}
 	else {
 		instInfo.enabledLayerCount = 0u;
@@ -225,13 +224,54 @@ void HelloTriangleApplication::SetupDebugMessenger()
 	if (!enableValidationLayers) return;
 	VkDebugUtilsMessengerCreateInfoEXT msgCreateInfo = {};
 
-	msgCreateInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
-	msgCreateInfo.messageSeverity = 0x00001101;
-	msgCreateInfo.messageType = 0x00000007;
-	msgCreateInfo.pfnUserCallback = DebugCallback;
-	msgCreateInfo.pNext = nullptr; // Optional
+	// Populate MessengerCreateInfo
+	PopulateDebugMessengerCreateInfo(msgCreateInfo);
 
 	VK_EXCEPT( CreateDebugUtilsMessengerEXT(m_Instance,&msgCreateInfo,nullptr,&m_Dmessenger) );
+}
+
+void HelloTriangleApplication::PickPhysicalDevice()
+{
+	EnumeratePhysicalDevices();
+
+	VkPhysicalDeviceProperties deviceProperties = {};
+	vkGetPhysicalDeviceProperties(m_device, &deviceProperties);
+}
+
+void HelloTriangleApplication::EnumeratePhysicalDevices()
+{
+	uint32_t physDevCount{ 0u };
+	
+	assert("Instance must be a valid VkInstance handle" && m_Instance);
+	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr) );
+
+	assert(physDevCount >= 1);
+
+	std::vector<VkPhysicalDevice> devices(physDevCount);
+	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()) );
+
+	// Check If all devices are suitable
+	for (auto &device : devices)
+	{
+		if (IsDeviceValid(device))
+		{
+			m_device = device;
+			break;
+		}
+	}
+	if (m_device == VK_NULL_HANDLE)
+		throw std::runtime_error("Failed to find a suitable GPU!!");
+}
+
+inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
+{
+	VkPhysicalDeviceFeatures deviceFeatures = {};
+	VkPhysicalDeviceProperties deviceProperties = {};
+
+	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
+	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+
+	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFeatures.geometryShader;
 }
 
 VkResult CreateDebugUtilsMessengerEXT
