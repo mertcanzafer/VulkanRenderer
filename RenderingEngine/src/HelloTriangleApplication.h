@@ -13,6 +13,7 @@
 #include <string>
 #include <cstring>
 #include <vulkan\vk_enum_string_helper.h>
+#include <optional>
 
 const uint32_t width = 1280u, height = 720u;
 
@@ -29,6 +30,7 @@ private:
 	void CleanUp();
 	void ChangeWindowIcon(); // For Changing window icon!!
 	void CreateVinstance();
+	void CreateDevice(VkDevice* device);
 
 	bool CheckValidationLayerSupport();
 	std::vector<const char*> GetRequiredExtensions();
@@ -48,6 +50,7 @@ private:
 	void PickPhysicalDevice();
 	void EnumeratePhysicalDevices();
 	inline bool IsDeviceValid(VkPhysicalDevice& device);
+
 private:
 	GLFWwindow* m_pWindow = nullptr;
 
@@ -61,4 +64,13 @@ private:
 	// Debug messager
 	VkDebugUtilsMessengerEXT m_Dmessenger;
 	VkPhysicalDevice m_device = VK_NULL_HANDLE; // This will be automatically destroyed when the vkInstance Get destroyed!!
+private:
+	struct QueueFamilyIndices
+	{
+		std::optional<uint32_t> graphicsFamily;
+	};
+	QueueFamilyIndices m_indices;
+private:
+	void FindQueueFamilies(VkPhysicalDevice device);
+	const QueueFamilyIndices& getQueueFamilyIndices() { FindQueueFamilies(m_device); return m_indices; }
 };

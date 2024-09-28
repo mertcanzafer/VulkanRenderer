@@ -2,6 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <cassert>
+#include <memory>
 
 #ifdef NDEBUG // If not in debug mode.
 	const bool enableValidationLayers{ false };
@@ -35,6 +36,8 @@ static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
 // Function for loading the vkSubmitDebugUtilsMessageEXT extension function.
 static void SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT * pCallbackData);
+
+struct QueueFamilyIndices;
 
 void HelloTriangleApplication::Run()
 {
@@ -157,6 +160,23 @@ void HelloTriangleApplication::CreateVinstance()
 	VK_EXCEPT_MACRO( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
 }
 
+// TODO: Create VkPhysicalDevice and VkDevice
+void HelloTriangleApplication::CreateDevice(VkDevice* device)
+{
+	std::unique_ptr<VkDeviceQueueCreateInfo[]>queueCreateInfo = std::make_unique<VkDeviceQueueCreateInfo[]>(2);
+	queueCreateInfo[0].queueFamilyIndex = 0u; // Transfer
+	queueCreateInfo[0].queueCount = 1;
+	queueCreateInfo[1].queueFamilyIndex = 1u; // Graphics
+	queueCreateInfo[1].queueCount = 2;
+
+	VkDeviceCreateInfo deviceCreateInfo = {};
+	deviceCreateInfo.pQueueCreateInfos = queueCreateInfo.get();
+	deviceCreateInfo.queueCreateInfoCount = 2u;
+
+	// Create VkDevice
+	vkCreateDevice(m_device, &deviceCreateInfo, nullptr, device);
+}
+
 bool HelloTriangleApplication::CheckValidationLayerSupport()
 {
 	uint32_t layerCount{ 0u };
@@ -236,6 +256,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 
 	VkPhysicalDeviceProperties deviceProperties = {};
 	vkGetPhysicalDeviceProperties(m_device, &deviceProperties);
+	//QueueFamilyIndices temp = FindQueueFamilies(m_device);
 }
 
 void HelloTriangleApplication::EnumeratePhysicalDevices()
@@ -272,6 +293,27 @@ inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 	vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
 	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFeatures.geometryShader;
+}
+
+// FIXME: Struct definition and declaration problem. Needed to be fixed!! 
+void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
+{
+	uint32_t queueFamiliyCount{ 0u };
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamiliyCount, nullptr);
+	std::vector<VkQueueFamilyProperties> properties(queueFamiliyCount);
+	// Vulkan requires an implementation to expose at least 1 queue family with graphics
+	
+	for (uint32_t i = 0; i < properties.size(); i++)
+	{
+		if (properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) // Meaning queueFlags ==  VK_QUEUE_GRAPHICS_BIT ?
+		{
+			// This Queue Family support graphics
+			m_indices.graphicsFamily = i;
+			break;
+		}
+	}
+	VkDevice _device;
+	CreateDevice(&_device);
 }
 
 VkResult CreateDebugUtilsMessengerEXT
