@@ -13,6 +13,7 @@
 #include <string>
 #include <cstring>
 #include <vulkan\vk_enum_string_helper.h>
+#include<optional>
 
 const uint32_t width = 1280u, height = 720u;
 
@@ -61,4 +62,15 @@ private:
 	// Debug messager
 	VkDebugUtilsMessengerEXT m_Dmessenger;
 	VkPhysicalDevice m_device = VK_NULL_HANDLE; // This will be automatically destroyed when the vkInstance Get destroyed!!
+
+	struct QueueFamiliyIndicies
+	{
+		std::optional<uint32_t> GraphicsFamily;
+		bool IsComplete()const { GraphicsFamily.has_value(); }
+	};
+	QueueFamiliyIndicies m_indicies;
+
+private:
+	void FindQueueFamilies(VkPhysicalDevice device);
+	QueueFamiliyIndicies& getFamiliyIndicies() { FindQueueFamilies(m_device); return m_indicies; }
 };

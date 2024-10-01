@@ -24,6 +24,14 @@ do {									\
 	}												\
 }while(0)
 
+//VkPhysicalDevice macro  !=
+#define VK_DEVICE_EXCEPT(d)							\
+	VkPhysicalDevice device = d;					\
+	do{												\
+		if (device == VK_NULL_HANDLE)				\
+			throw std::runtime_error("Device is not valid to use\n");	\
+	}while(0)
+
 // Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
 static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
 											const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pDebugMessenger);
@@ -234,8 +242,11 @@ void HelloTriangleApplication::PickPhysicalDevice()
 {
 	EnumeratePhysicalDevices();
 
-	VkPhysicalDeviceProperties deviceProperties = {};
-	vkGetPhysicalDeviceProperties(m_device, &deviceProperties);
+	VkPhysicalDeviceProperties2 deviceProperties = {};
+	// !=
+	deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
+	VK_DEVICE_EXCEPT(m_device);
+	vkGetPhysicalDeviceProperties2KHR(m_device, &deviceProperties);
 }
 
 void HelloTriangleApplication::EnumeratePhysicalDevices()
@@ -272,6 +283,26 @@ inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 	vkGetPhysicalDeviceProperties(device, &deviceProperties);
 
 	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFeatures.geometryShader;
+}
+
+void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
+{
+	uint32_t queueFamilyCount{ 0u };
+	assert("Device must be valid device!!!" && device != VK_NULL_HANDLE);
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
+
+	std::vector<VkQueueFamilyProperties> properties(queueFamilyCount);
+
+	for (uint32_t i = 0; i < queueFamilyCount; i++)
+	{
+		if ((properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
+		{
+			// This Queue Family support graphics
+			m_indicies.GraphicsFamily = i;
+			if (m_indicies.GraphicsFamily.has_value())
+				break;
+		}
+	}
 }
 
 VkResult CreateDebugUtilsMessengerEXT
