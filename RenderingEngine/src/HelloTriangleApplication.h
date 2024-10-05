@@ -23,6 +23,9 @@ public:
 	void Run();
 	HelloTriangleApplication() = default;
 	~HelloTriangleApplication() = default;
+
+	HelloTriangleApplication(const HelloTriangleApplication& copy) = delete;
+	HelloTriangleApplication& operator =(const HelloTriangleApplication& copy) = delete;
 private:
 	void InitWindow(); // For GLFW window creation
 	void InitVulkan();
@@ -70,7 +73,12 @@ private:
 	};
 	QueueFamiliyIndicies m_indicies;
 
+	// Logical Device 
+	VkDevice m_Ldevice;
+	void CreateLogicalDevice();
 private:
 	void FindQueueFamilies(VkPhysicalDevice device);
 	QueueFamiliyIndicies& getFamiliyIndicies() { FindQueueFamilies(m_device); return m_indicies; }
+
+	VkQueue m_graphicsQueue;
 };

@@ -44,6 +44,9 @@ static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
 static void SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT * pCallbackData);
 
+static VkPhysicalDeviceFeatures g_deviceFeatures = {};
+static VkPhysicalDeviceProperties g_deviceProperties = {};
+
 void HelloTriangleApplication::Run()
 {
 	InitWindow();
@@ -75,6 +78,8 @@ void HelloTriangleApplication::InitVulkan()
 {
 	CreateVinstance();
 	SetupDebugMessenger();
+	PickPhysicalDevice();
+	CreateLogicalDevice();
 }
 
 void HelloTriangleApplication::MainLoop()
@@ -92,7 +97,7 @@ void HelloTriangleApplication::CleanUp()
 		DestroyDebugUtilsMessengerEXT(m_Instance, m_Dmessenger, nullptr);
 	}
 	vkDestroyInstance(m_Instance, nullptr);
-
+	vkDestroyDevice(m_Ldevice, nullptr);
 	if (m_pWindow)
 		glfwDestroyWindow(m_pWindow);
 	glfwTerminate();
@@ -276,13 +281,40 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 
 inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 {
-	VkPhysicalDeviceFeatures deviceFeatures = {};
-	VkPhysicalDeviceProperties deviceProperties = {};
+	vkGetPhysicalDeviceFeatures(device, &g_deviceFeatures);
+	vkGetPhysicalDeviceProperties(device, &g_deviceProperties);
+	return g_deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && g_deviceFeatures.geometryShader;
+}
 
-	vkGetPhysicalDeviceFeatures(device, &deviceFeatures);
-	vkGetPhysicalDeviceProperties(device, &deviceProperties);
+void HelloTriangleApplication::CreateLogicalDevice()
+{
+	QueueFamiliyIndicies indices = getFamiliyIndicies();
+	VkDeviceQueueCreateInfo queueCreateInfo = {};
+	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+	queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
+	queueCreateInfo.queueCount = 1u;
 
-	return deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && deviceFeatures.geometryShader;
+	float queuePriority = { 1.0f };
+	queueCreateInfo.pQueuePriorities = &queuePriority;
+
+	VkDeviceCreateInfo CreateInfo = {};
+	CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
+	CreateInfo.pQueueCreateInfos = &queueCreateInfo;
+	CreateInfo.queueCreateInfoCount = 1u;
+	CreateInfo.pEnabledFeatures = &g_deviceFeatures;
+	CreateInfo.enabledExtensionCount = 0u;
+
+	if (enableValidationLayers)
+	{
+		CreateInfo.enabledLayerCount = (uint32_t)m_ValidationLayers.size();
+		CreateInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+	}
+	else
+		CreateInfo.enabledLayerCount = 0u;
+
+	VK_EXCEPT( vkCreateDevice(m_device, &CreateInfo, nullptr, &m_Ldevice) );
+
+	vkGetDeviceQueue(m_Ldevice, indices.GraphicsFamily.value(), 0u, &m_graphicsQueue);
 }
 
 void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
