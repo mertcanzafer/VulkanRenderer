@@ -24,14 +24,6 @@ do {									\
 	}												\
 }while(0)
 
-//VkPhysicalDevice macro  !=
-#define VK_DEVICE_EXCEPT(d)							\
-	VkPhysicalDevice device = d;					\
-	do{												\
-		if (device == VK_NULL_HANDLE)				\
-			throw std::runtime_error("Device is not valid to use\n");	\
-	}while(0)
-
 // Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
 static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
 											const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pDebugMessenger);
@@ -84,8 +76,10 @@ void HelloTriangleApplication::InitVulkan()
 
 void HelloTriangleApplication::MainLoop()
 {
+	std::cerr << "Outside the loop\n";
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
+		std::cerr << "In the loop!\n";
 		glfwPollEvents();
 	}
 }
@@ -96,8 +90,8 @@ void HelloTriangleApplication::CleanUp()
 	{
 		DestroyDebugUtilsMessengerEXT(m_Instance, m_Dmessenger, nullptr);
 	}
-	vkDestroyInstance(m_Instance, nullptr);
 	vkDestroyDevice(m_Ldevice, nullptr);
+	vkDestroyInstance(m_Instance, nullptr);
 	if (m_pWindow)
 		glfwDestroyWindow(m_pWindow);
 	glfwTerminate();
@@ -157,6 +151,7 @@ void HelloTriangleApplication::CreateVinstance()
 	{
 		instInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 		instInfo.ppEnabledLayerNames = m_ValidationLayers.data();
+		instInfo.pNext = &debugCreateInfo;
 
 		PopulateDebugMessengerCreateInfo(debugCreateInfo);
 		debugCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -167,7 +162,7 @@ void HelloTriangleApplication::CreateVinstance()
 	}
 
 	// Creating the instance with given info
-	VK_EXCEPT_MACRO( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
+	VK_EXCEPT( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
 }
 
 bool HelloTriangleApplication::CheckValidationLayerSupport()
@@ -246,12 +241,11 @@ void HelloTriangleApplication::SetupDebugMessenger()
 void HelloTriangleApplication::PickPhysicalDevice()
 {
 	EnumeratePhysicalDevices();
-
 	VkPhysicalDeviceProperties2 deviceProperties = {};
 	// !=
 	deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
-	VK_DEVICE_EXCEPT(m_device);
-	vkGetPhysicalDeviceProperties2KHR(m_device, &deviceProperties);
+	deviceProperties.pNext = nullptr;
+	vkGetPhysicalDeviceProperties2(m_device, &deviceProperties);
 }
 
 void HelloTriangleApplication::EnumeratePhysicalDevices()
@@ -335,6 +329,12 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 				break;
 		}
 	}
+
+	if (!m_indicies.IsComplete())
+	{
+		throw std::runtime_error("Unvalid graphics queue Family!!\n");
+	}
+
 }
 
 VkResult CreateDebugUtilsMessengerEXT

@@ -69,7 +69,7 @@ private:
 	struct QueueFamiliyIndicies
 	{
 		std::optional<uint32_t> GraphicsFamily;
-		bool IsComplete()const { GraphicsFamily.has_value(); }
+		bool IsComplete()const { return GraphicsFamily.has_value(); }
 	};
 	QueueFamiliyIndicies m_indicies;
 
