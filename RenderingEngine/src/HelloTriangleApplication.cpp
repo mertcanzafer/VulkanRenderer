@@ -151,7 +151,6 @@ void HelloTriangleApplication::CreateVinstance()
 	{
 		instInfo.enabledLayerCount = static_cast<uint32_t>(m_ValidationLayers.size());
 		instInfo.ppEnabledLayerNames = m_ValidationLayers.data();
-		instInfo.pNext = &debugCreateInfo;
 
 		PopulateDebugMessengerCreateInfo(debugCreateInfo);
 		debugCreateInfo.pNext = (VkDebugUtilsMessengerCreateInfoEXT*)&debugCreateInfo;
@@ -245,6 +244,8 @@ void HelloTriangleApplication::PickPhysicalDevice()
 	// !=
 	deviceProperties.sType = VK_STRUCTURE_TYPE_PHYSICAL_DEVICE_PROPERTIES_2;
 	deviceProperties.pNext = nullptr;
+	//! Validation layer triggerd when calling vkGetPhysicalDeviceProperties2 function
+	//Todo Examine the function parameters and implementation
 	vkGetPhysicalDeviceProperties2(m_device, &deviceProperties);
 }
 
@@ -255,7 +256,7 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	assert("Instance must be a valid VkInstance handle" && m_Instance);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr) );
 
-	assert(physDevCount >= 1);
+	assert(physDevCount != 0 && "Filed to find GPUs with Vulkan Support!!\n");
 
 	std::vector<VkPhysicalDevice> devices(physDevCount);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()) );
@@ -275,14 +276,14 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 
 inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 {
-	vkGetPhysicalDeviceFeatures(device, &g_deviceFeatures);
-	vkGetPhysicalDeviceProperties(device, &g_deviceProperties);
-	return g_deviceProperties.deviceType == VK_PHYSICAL_DEVICE_TYPE_INTEGRATED_GPU && g_deviceFeatures.geometryShader;
+	//? If you are sure that it picks the most suitable device. Then keep the IsDevice valid function like this 
+	const auto indices = getFamiliyIndicies(device);
+	return indices.IsComplete();
 }
 
 void HelloTriangleApplication::CreateLogicalDevice()
 {
-	QueueFamiliyIndicies indices = getFamiliyIndicies();
+	QueueFamiliyIndicies indices = getFamiliyIndicies(m_device);
 	VkDeviceQueueCreateInfo queueCreateInfo = {};
 	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 	queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
@@ -318,9 +319,13 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
 	std::vector<VkQueueFamilyProperties> properties(queueFamilyCount);
-
+	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, properties.data());
+	//! It looks like all queueFlags has right most 0 bit which indicates that they don't have graphics bit!!!!
+	//Todo Look up the Vulkan Spec!!!
 	for (uint32_t i = 0; i < queueFamilyCount; i++)
 	{
+		//! Debugging, see the queueFlags
+		std::cerr << "Flag" << i + 1 << ": " << properties[i].queueFlags << std::endl;
 		if ((properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
 		{
 			// This Queue Family support graphics

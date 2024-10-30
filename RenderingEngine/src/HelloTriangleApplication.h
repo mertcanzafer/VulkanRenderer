@@ -56,7 +56,7 @@ private:
 	GLFWwindow* m_pWindow = nullptr;
 
 	// Declare the vulkan instance
-	VkInstance m_Instance;
+	VkInstance m_Instance = VK_NULL_HANDLE;
 
 	const std::vector<const char*> m_ValidationLayers
 	{
@@ -78,7 +78,14 @@ private:
 	void CreateLogicalDevice();
 private:
 	void FindQueueFamilies(VkPhysicalDevice device);
-	QueueFamiliyIndicies& getFamiliyIndicies() { FindQueueFamilies(m_device); return m_indicies; }
+	QueueFamiliyIndicies& getFamiliyIndicies(VkPhysicalDevice device) { FindQueueFamilies(device); return m_indicies; }
 
 	VkQueue m_graphicsQueue;
 };
+
+
+
+//! Use this mark to demonstrate something important!
+//? Use this mark to write questions while writing comments
+// Todo write "Todo" for what to do on the code.
+//x use x or X for crossing comments out
