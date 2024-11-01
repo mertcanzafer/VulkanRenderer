@@ -13,7 +13,7 @@
 #include <string>
 #include <cstring>
 #include <vulkan\vk_enum_string_helper.h>
-#include<optional>
+#include <optional>
 
 const uint32_t width = 1280u, height = 720u;
 

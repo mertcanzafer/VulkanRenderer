@@ -76,10 +76,9 @@ void HelloTriangleApplication::InitVulkan()
 
 void HelloTriangleApplication::MainLoop()
 {
-	std::cerr << "Outside the loop\n";
 	while (!glfwWindowShouldClose(m_pWindow))
 	{
-		std::cerr << "In the loop!\n";
+		std::clog << "In the loop!\n";
 		glfwPollEvents();
 	}
 }
@@ -252,6 +251,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 void HelloTriangleApplication::EnumeratePhysicalDevices()
 {
 	uint32_t physDevCount{ 0u };
+	uint32_t deviceIndex = { 0u }, deviceCounter{0u};
 	
 	assert("Instance must be a valid VkInstance handle" && m_Instance);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr) );
@@ -267,17 +267,25 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 		if (IsDeviceValid(device))
 		{
 			m_device = device;
+			deviceIndex = deviceCounter;
 			break;
 		}
+		deviceCounter++;
 	}
 	if (m_device == VK_NULL_HANDLE)
 		throw std::runtime_error("Failed to find a suitable GPU!!");
+	assert(deviceIndex < 2);
+	//! Extract the NVIDIA device!!!  -> devices[0] = AMD GFX device, devices[1] = NVIDIA GTX device on my computer.
+	//! This part is optional as you might want to choose a specific device for graphics render pipeline.
+	//! However, you have to update your all graphics drivers before vulkan layers start to do rendering pixels to the screen
+	m_device = devices.at(static_cast<std::vector<VkPhysicalDevice, std::allocator<VkPhysicalDevice>>::size_type>(deviceIndex) + 1);
+	//vkGetPhysicalDeviceProperties(m_device, &g_deviceProperties);
 }
 
 inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 {
 	//? If you are sure that it picks the most suitable device. Then keep the IsDevice valid function like this 
-	const auto indices = getFamiliyIndicies(device);
+	const QueueFamiliyIndicies indices = getFamiliyIndicies(device);
 	return indices.IsComplete();
 }
 
@@ -339,7 +347,6 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 	{
 		throw std::runtime_error("Unvalid graphics queue Family!!\n");
 	}
-
 }
 
 VkResult CreateDebugUtilsMessengerEXT
