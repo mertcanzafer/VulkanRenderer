@@ -156,6 +156,7 @@
     <ClCompile Include="src\Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\DefinesAndMacros.h" />
     <ClInclude Include="src\HelloTriangleApplication.h" />
     <ClInclude Include="src\stb_image.h" />
     <ClInclude Include="src\Timer.h" />

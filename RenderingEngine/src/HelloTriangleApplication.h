@@ -15,6 +15,8 @@
 #include <vulkan\vk_enum_string_helper.h>
 #include <optional>
 
+#include "DefinesAndMacros.h"
+
 const uint32_t width = 1280u, height = 720u;
 
 class HelloTriangleApplication

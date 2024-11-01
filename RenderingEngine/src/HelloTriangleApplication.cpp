@@ -3,39 +3,6 @@
 #include "stb_image.h"
 #include <cassert>
 
-#ifdef NDEBUG // If not in debug mode.
-	const bool enableValidationLayers{ false };
-#else // in debug mode
-	const bool enableValidationLayers{ true };
-#endif
-
-// Define Macro helpers
-#define VK_EXCEPT_MACRO(vk)	 if(vk != VK_SUCCESS)	throw std::runtime_error("Failed to create instance\n")
-
-#define VK_EXCEPT(vk)					\
-do {									\
-	VkResult result = vk;				\
-	std::string to_string = string_VkResult(result);\
-													\
-	if (result != VK_SUCCESS)						\
-	{												\
-		std::string error = "Detected Vulkan error { " + to_string + " }"; \
-		throw  std::runtime_error(error);			\
-	}												\
-}while(0)
-
-// Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
-static VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT * pCreateInfo,
-											const VkAllocationCallbacks * pAllocator, VkDebugUtilsMessengerEXT * pDebugMessenger);
-
-// Function for loading the vkDestroyDebugUtilsMessengerEXT extension function.
-static void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMessengerEXT debugMessanger,
-										const VkAllocationCallbacks * pAllocator);
-
-// Function for loading the vkSubmitDebugUtilsMessageEXT extension function.
-static void SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
-	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT * pCallbackData);
-
 static VkPhysicalDeviceFeatures g_deviceFeatures = {};
 static VkPhysicalDeviceProperties g_deviceProperties = {};
 
@@ -402,4 +369,9 @@ void HelloTriangleApplication:: PopulateDebugMessengerCreateInfo(VkDebugUtilsMes
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 	DbgCrtInfo.pfnUserCallback = DebugCallback;
 	DbgCrtInfo.pUserData = nullptr;
+}
+
+bool IsVendorNVIDIA(enum DevInfo& info)
+{
+	return (info == NVIDIA) ? true : false;
 }
