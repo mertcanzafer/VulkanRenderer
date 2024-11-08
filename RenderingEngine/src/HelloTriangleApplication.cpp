@@ -220,6 +220,10 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	uint32_t physDevCount{ 0u };
 	uint32_t deviceIndex = { 0u }, deviceCounter{0u};
 	
+	// ! You can switch NVIDIA to AMD by changing the DevInfo enum type
+	// ? These lines of code might be changed in the future!!
+	enum DevInfo devType = NVIDIA;
+
 	assert("Instance must be a valid VkInstance handle" && m_Instance);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr) );
 
@@ -228,25 +232,43 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	std::vector<VkPhysicalDevice> devices(physDevCount);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()) );
 
-	// Check If all devices are suitable
-	for (auto &device : devices)
+	switch (IsVendorNVIDIA(devType))
 	{
-		if (IsDeviceValid(device))
-		{
-			m_device = device;
-			deviceIndex = deviceCounter;
-			break;
-		}
-		deviceCounter++;
+	case 0: // AMD GFX device!
+		if(IsDeviceValid(devices[0]))
+			m_device = devices[0];
+		break;
+	case 1: // NVIDIA GFX device
+		if(IsDeviceValid(devices[1]))
+			m_device = devices[1];
+		break;
 	}
+
 	if (m_device == VK_NULL_HANDLE)
-		throw std::runtime_error("Failed to find a suitable GPU!!");
-	assert(deviceIndex < 2);
-	//! Extract the NVIDIA device!!!  -> devices[0] = AMD GFX device, devices[1] = NVIDIA GTX device on my computer.
-	//! This part is optional as you might want to choose a specific device for graphics render pipeline.
-	//! However, you have to update your all graphics drivers before vulkan layers start to do rendering pixels to the screen
-	m_device = devices.at(static_cast<std::vector<VkPhysicalDevice, std::allocator<VkPhysicalDevice>>::size_type>(deviceIndex) + 1);
-	//vkGetPhysicalDeviceProperties(m_device, &g_deviceProperties);
+		throw std::runtime_error("Failed to find a suitable GPU!!\n");
+
+	vkGetPhysicalDeviceProperties(m_device, &g_deviceProperties);
+	std::clog << "Device: " << g_deviceProperties.deviceName << std::endl;
+
+	//// Check If all devices are suitable
+	//for (auto &device : devices)
+	//{
+	//	if (IsDeviceValid(device) && IsVendorNVIDIA(devType))
+	//	{
+	//		m_device = device;
+	//		deviceIndex = deviceCounter;
+	//		break;
+	//	}
+	//	deviceCounter++;
+	//}
+	//if (m_device == VK_NULL_HANDLE)
+	//	throw std::runtime_error("Failed to find a suitable GPU!!");
+	//assert(deviceIndex < 2);
+	////! Extract the NVIDIA device!!!  -> devices[0] = AMD GFX device, devices[1] = NVIDIA GTX device on my computer.
+	////! This part is optional as you might want to choose a specific device for graphics render pipeline.
+	////! However, you have to update your all graphics drivers before vulkan layers start to do rendering pixels to the screen
+	//m_device = devices.at(static_cast<std::vector<VkPhysicalDevice, std::allocator<VkPhysicalDevice>>::size_type>(deviceIndex) + 1);
+	////vkGetPhysicalDeviceProperties(m_device, &g_deviceProperties);
 }
 
 inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
@@ -295,12 +317,9 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 
 	std::vector<VkQueueFamilyProperties> properties(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, properties.data());
-	//! It looks like all queueFlags has right most 0 bit which indicates that they don't have graphics bit!!!!
 	//Todo Look up the Vulkan Spec!!!
 	for (uint32_t i = 0; i < queueFamilyCount; i++)
 	{
-		//! Debugging, see the queueFlags
-		std::cerr << "Flag" << i + 1 << ": " << properties[i].queueFlags << std::endl;
 		if ((properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
 		{
 			// This Queue Family support graphics
