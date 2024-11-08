@@ -27,9 +27,6 @@ extern enum DevInfo
 	AMD = 0x01
 };
 
-// !Function for determing the GPU device vendor type.
-extern bool IsVendorNVIDIA(enum DevInfo& info);
-
 // !Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
 extern VkResult CreateDebugUtilsMessengerEXT(VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 	const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger);

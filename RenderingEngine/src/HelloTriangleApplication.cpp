@@ -232,13 +232,13 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	std::vector<VkPhysicalDevice> devices(physDevCount);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()) );
 
-	switch (IsVendorNVIDIA(devType))
+	switch (devType)
 	{
-	case 0: // AMD GFX device!
+	case NVIDIA: // NVIDIA GFX device!
 		if(IsDeviceValid(devices[0]))
 			m_device = devices[0];
 		break;
-	case 1: // NVIDIA GFX device
+	case AMD: // AMD GFX device
 		if(IsDeviceValid(devices[1]))
 			m_device = devices[1];
 		break;
@@ -388,9 +388,4 @@ void HelloTriangleApplication:: PopulateDebugMessengerCreateInfo(VkDebugUtilsMes
 		VK_DEBUG_UTILS_MESSAGE_TYPE_VALIDATION_BIT_EXT;
 	DbgCrtInfo.pfnUserCallback = DebugCallback;
 	DbgCrtInfo.pUserData = nullptr;
-}
-
-bool IsVendorNVIDIA(enum DevInfo& info)
-{
-	return (info == NVIDIA) ? true : false;
 }
