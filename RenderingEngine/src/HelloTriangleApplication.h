@@ -14,6 +14,7 @@
 #include <cstring>
 #include <vulkan\vk_enum_string_helper.h>
 #include <optional>
+#include <set>
 
 #include "DefinesAndMacros.h"
 
@@ -71,7 +72,8 @@ private:
 	struct QueueFamiliyIndicies
 	{
 		std::optional<uint32_t> GraphicsFamily;
-		bool IsComplete()const { return GraphicsFamily.has_value(); }
+		std::optional<uint32_t> PresentFamily;
+		bool IsComplete()const { return GraphicsFamily.has_value() && PresentFamily.has_value(); }
 	};
 	QueueFamiliyIndicies m_indicies;
 
@@ -82,7 +84,9 @@ private:
 	void FindQueueFamilies(VkPhysicalDevice device);
 	QueueFamiliyIndicies& getFamiliyIndicies(VkPhysicalDevice device) { FindQueueFamilies(device); return m_indicies; }
 
-	VkQueue m_graphicsQueue;
+	VkQueue m_graphicsQueue,m_presentQueue;
+	VkSurfaceKHR m_surface = VK_NULL_HANDLE;
+	void CreateSurface();
 };
 
 

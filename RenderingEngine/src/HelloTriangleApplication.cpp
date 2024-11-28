@@ -2,6 +2,7 @@
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
 #include <cassert>
+#include "Timer.h"
 
 static VkPhysicalDeviceFeatures g_deviceFeatures = {};
 static VkPhysicalDeviceProperties g_deviceProperties = {};
@@ -37,6 +38,7 @@ void HelloTriangleApplication::InitVulkan()
 {
 	CreateVinstance();
 	SetupDebugMessenger();
+	CreateSurface();
 	PickPhysicalDevice();
 	CreateLogicalDevice();
 }
@@ -57,6 +59,7 @@ void HelloTriangleApplication::CleanUp()
 		DestroyDebugUtilsMessengerEXT(m_Instance, m_Dmessenger, nullptr);
 	}
 	vkDestroyDevice(m_Ldevice, nullptr);
+	vkDestroySurfaceKHR(m_Instance, m_surface, nullptr);
 	vkDestroyInstance(m_Instance, nullptr);
 	if (m_pWindow)
 		glfwDestroyWindow(m_pWindow);
@@ -91,7 +94,7 @@ void HelloTriangleApplication::CreateVinstance()
 
 	// Fill the application info struct!!!
 	VkApplicationInfo appInfo = {};
-	appInfo.apiVersion = VK_API_VERSION_1_0;
+	appInfo.apiVersion = VK_API_VERSION_1_1;
 	appInfo.pApplicationName = "Hello Triangle";
 	appInfo.pEngineName = "No Engine";
 	appInfo.engineVersion = VK_MAKE_VERSION( 1,0,0 );
@@ -212,13 +215,17 @@ void HelloTriangleApplication::PickPhysicalDevice()
 	deviceProperties.pNext = nullptr;
 	//! Validation layer triggerd when calling vkGetPhysicalDeviceProperties2 function
 	//Todo Examine the function parameters and implementation
+	assert(m_device != VK_NULL_HANDLE && "The device is not valid!!!\n");
+
+	Timer t;
 	vkGetPhysicalDeviceProperties2(m_device, &deviceProperties);
+	std::clog << "Took " << t.Elapsed() << " seconds\n";
 }
 
 void HelloTriangleApplication::EnumeratePhysicalDevices()
 {
 	uint32_t physDevCount{ 0u };
-	uint32_t deviceIndex = { 0u }, deviceCounter{0u};
+	//uint32_t deviceIndex = { 0u }, deviceCounter{0u};
 	
 	// ! You can switch NVIDIA to AMD by changing the DevInfo enum type
 	// ? These lines of code might be changed in the future!!
@@ -235,12 +242,12 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	switch (devType)
 	{
 	case NVIDIA: // NVIDIA GFX device!
-		if(IsDeviceValid(devices[0]))
-			m_device = devices[0];
-		break;
-	case AMD: // AMD GFX device
 		if(IsDeviceValid(devices[1]))
 			m_device = devices[1];
+		break;
+	case AMD: // AMD GFX device
+		if(IsDeviceValid(devices[0]))
+			m_device = devices[0];
 		break;
 	}
 
@@ -281,18 +288,28 @@ inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 void HelloTriangleApplication::CreateLogicalDevice()
 {
 	QueueFamiliyIndicies indices = getFamiliyIndicies(m_device);
-	VkDeviceQueueCreateInfo queueCreateInfo = {};
-	queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
-	queueCreateInfo.queueFamilyIndex = indices.GraphicsFamily.value();
-	queueCreateInfo.queueCount = 1u;
+
+	std::set<uint32_t> uniqueQueueFamilies{ indices.GraphicsFamily.value(),indices.PresentFamily.value() };
+	std::vector<VkDeviceQueueCreateInfo> queueCreateInfos;
+	queueCreateInfos.reserve(uniqueQueueFamilies.size());
 
 	float queuePriority = { 1.0f };
-	queueCreateInfo.pQueuePriorities = &queuePriority;
+	size_t i{0};
+	for (auto queueFamily : uniqueQueueFamilies)
+	{
+		VkDeviceQueueCreateInfo queueCreateInfo{};
+		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
+		queueCreateInfo.queueFamilyIndex = (uint32_t)queueFamily;
+		queueCreateInfo.queueCount = 1u;
+		queueCreateInfo.pQueuePriorities = &queuePriority;
+		queueCreateInfos[i] = queueCreateInfo;
+		i++;
+	}
 
 	VkDeviceCreateInfo CreateInfo = {};
 	CreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_CREATE_INFO;
-	CreateInfo.pQueueCreateInfos = &queueCreateInfo;
-	CreateInfo.queueCreateInfoCount = 1u;
+	CreateInfo.pQueueCreateInfos = queueCreateInfos.data();
+	CreateInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
 	CreateInfo.pEnabledFeatures = &g_deviceFeatures;
 	CreateInfo.enabledExtensionCount = 0u;
 
@@ -307,6 +324,7 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	VK_EXCEPT( vkCreateDevice(m_device, &CreateInfo, nullptr, &m_Ldevice) );
 
 	vkGetDeviceQueue(m_Ldevice, indices.GraphicsFamily.value(), 0u, &m_graphicsQueue);
+	vkGetDeviceQueue(m_Ldevice, indices.PresentFamily.value(), 0u, &m_presentQueue);
 }
 
 void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
@@ -318,21 +336,36 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 	std::vector<VkQueueFamilyProperties> properties(queueFamilyCount);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, properties.data());
 	//Todo Look up the Vulkan Spec!!!
+	VkBool32 presentSupport = false;
 	for (uint32_t i = 0; i < queueFamilyCount; i++)
 	{
 		if ((properties[i].queueFlags & VK_QUEUE_GRAPHICS_BIT) != 0)
 		{
 			// This Queue Family support graphics
 			m_indicies.GraphicsFamily = i;
-			if (m_indicies.GraphicsFamily.has_value())
-				break;
 		}
+		presentSupport = false;
+		VK_EXCEPT( vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport) );
+
+		if (presentSupport)
+		{
+			m_indicies.PresentFamily = i;
+		}
+		if (m_indicies.IsComplete()) break;
 	}
 
 	if (!m_indicies.IsComplete())
 	{
 		throw std::runtime_error("Unvalid graphics queue Family!!\n");
 	}
+}
+
+void HelloTriangleApplication::CreateSurface()
+{
+	assert(m_Instance != VK_NULL_HANDLE && "Invalid instance!!!");
+	assert(m_pWindow != nullptr && "Window instance must not be a null ptr!!!!");
+	VK_EXCEPT( glfwCreateWindowSurface(m_Instance, m_pWindow, nullptr, &m_surface) );
+	// !vkSurface should be destroyed before destroying m_instance!!!
 }
 
 VkResult CreateDebugUtilsMessengerEXT
