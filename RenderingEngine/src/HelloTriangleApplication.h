@@ -1,24 +1,5 @@
 #pragma once
-// define GLFW_INCLUDE_VULKAN macro to include vulkan header file that was included in glfw
-// define the macro before including glfw
-
-#define GLFW_INCLUDE_VULKAN
-
-#include <GLFW\glfw3.h>
-
-#include <iostream>
-#include <stdexcept>
-#include <cstdlib>
-#include <vector>
-#include <string>
-#include <cstring>
-#include <vulkan\vk_enum_string_helper.h>
-#include <optional>
-#include <set>
-
 #include "DefinesAndMacros.h"
-
-const uint32_t width = 1280u, height = 720u;
 
 class HelloTriangleApplication
 {
@@ -69,14 +50,7 @@ private:
 	VkDebugUtilsMessengerEXT m_Dmessenger;
 	VkPhysicalDevice m_device = VK_NULL_HANDLE; // This will be automatically destroyed when the vkInstance Get destroyed!!
 
-	struct QueueFamiliyIndicies
-	{
-		std::optional<uint32_t> GraphicsFamily;
-		std::optional<uint32_t> PresentFamily;
-		bool IsComplete()const { return GraphicsFamily.has_value() && PresentFamily.has_value(); }
-	};
 	QueueFamiliyIndicies m_indicies;
-
 	// Logical Device 
 	VkDevice m_Ldevice;
 	void CreateLogicalDevice();
@@ -87,6 +61,15 @@ private:
 	VkQueue m_graphicsQueue,m_presentQueue;
 	VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 	void CreateSurface();
+
+	const std::vector<const char*> m_DeviceExtensionList
+	{
+		VK_KHR_SWAPCHAIN_EXTENSION_NAME
+	};
+
+	bool CheckDeviceExtension(VkPhysicalDevice& device)const;
+
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& device);
 };
 
 

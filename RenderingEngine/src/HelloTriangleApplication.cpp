@@ -282,7 +282,17 @@ inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
 {
 	//? If you are sure that it picks the most suitable device. Then keep the IsDevice valid function like this 
 	const QueueFamiliyIndicies indices = getFamiliyIndicies(device);
-	return indices.IsComplete();
+	bool extensionSupported = CheckDeviceExtension(device);
+
+	bool swapChainAdequate = false;
+
+	if (extensionSupported)
+	{
+		SwapChainSupportDetails swapChainSupport = QuerySwapChainSupport(device);
+		swapChainAdequate = !swapChainSupport.formats.empty() && !swapChainSupport.presentModes.empty();
+	}
+
+	return indices.IsComplete() && extensionSupported && swapChainAdequate;
 }
 
 void HelloTriangleApplication::CreateLogicalDevice()
@@ -294,16 +304,14 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	queueCreateInfos.reserve(uniqueQueueFamilies.size());
 
 	float queuePriority = { 1.0f };
-	size_t i{0};
-	for (auto queueFamily : uniqueQueueFamilies)
+	for (const auto& queueFamily : uniqueQueueFamilies)
 	{
 		VkDeviceQueueCreateInfo queueCreateInfo{};
 		queueCreateInfo.sType = VK_STRUCTURE_TYPE_DEVICE_QUEUE_CREATE_INFO;
 		queueCreateInfo.queueFamilyIndex = (uint32_t)queueFamily;
 		queueCreateInfo.queueCount = 1u;
 		queueCreateInfo.pQueuePriorities = &queuePriority;
-		queueCreateInfos[i] = queueCreateInfo;
-		i++;
+		queueCreateInfos.push_back(queueCreateInfo);
 	}
 
 	VkDeviceCreateInfo CreateInfo = {};
@@ -311,7 +319,8 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	CreateInfo.pQueueCreateInfos = queueCreateInfos.data();
 	CreateInfo.queueCreateInfoCount = (uint32_t)queueCreateInfos.size();
 	CreateInfo.pEnabledFeatures = &g_deviceFeatures;
-	CreateInfo.enabledExtensionCount = 0u;
+	CreateInfo.enabledExtensionCount = (uint32_t)m_DeviceExtensionList.size();
+	CreateInfo.ppEnabledExtensionNames = m_DeviceExtensionList.data();
 
 	if (enableValidationLayers)
 	{
@@ -366,6 +375,67 @@ void HelloTriangleApplication::CreateSurface()
 	assert(m_pWindow != nullptr && "Window instance must not be a null ptr!!!!");
 	VK_EXCEPT( glfwCreateWindowSurface(m_Instance, m_pWindow, nullptr, &m_surface) );
 	// !vkSurface should be destroyed before destroying m_instance!!!
+}
+
+bool HelloTriangleApplication::CheckDeviceExtension(VkPhysicalDevice& device) const
+{
+	uint32_t extensionCount{};
+
+	assert(device != VK_NULL_HANDLE && "Device must be valid!!");
+	VK_EXCEPT( vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,nullptr) );
+
+	std::vector<VkExtensionProperties> extensionProperties(extensionCount);
+	uint32_t propertiesCount = (uint32_t)extensionProperties.size();
+	VK_EXCEPT(
+		vkEnumerateDeviceExtensionProperties(device, nullptr, &propertiesCount, extensionProperties.data());
+	);
+
+	std::set<std::string> requiredExtensions(m_DeviceExtensionList.begin(), m_DeviceExtensionList.end());
+
+	for (const auto& ext : extensionProperties)
+	{
+		requiredExtensions.erase(ext.extensionName);
+	}
+
+	return requiredExtensions.empty();
+}
+
+SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice& device)
+{
+	SwapChainSupportDetails details = {};
+	
+	assert(m_surface != VK_NULL_HANDLE && device != VK_NULL_HANDLE &&  
+		"surface and device must be valid handles");
+	// Query capabilties of surface and device.
+	VK_EXCEPT(
+		vkGetPhysicalDeviceSurfaceCapabilitiesKHR(device, m_surface, &details.capabilities);
+	);
+	// Query Format of the surface and the device.
+	uint32_t formatCount = {};
+
+	VK_EXCEPT(
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_surface, &formatCount, details.formats.data());
+	);
+
+	if (formatCount)
+	{
+		details.formats.resize(formatCount);
+		vkGetPhysicalDeviceSurfaceFormatsKHR(device, m_surface, &formatCount, details.formats.data());
+	}
+
+	// Query PresentMode of the surface and the device. 
+	uint32_t presentModeCount = {};
+	VK_EXCEPT(
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_surface, &presentModeCount, details.presentModes.data());
+	);
+
+	if (presentModeCount)
+	{
+		details.formats.resize(presentModeCount);
+		vkGetPhysicalDeviceSurfacePresentModesKHR(device, m_surface, &presentModeCount, details.presentModes.data());
+	}
+
+	return details;
 }
 
 VkResult CreateDebugUtilsMessengerEXT
