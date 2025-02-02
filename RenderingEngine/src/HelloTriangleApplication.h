@@ -1,4 +1,5 @@
 #pragma once
+#define ASSERTIONS_ENABLED  1
 #include "DefinesAndMacros.h"
 
 class HelloTriangleApplication
@@ -35,7 +36,7 @@ private:
 	void SetupDebugMessenger();
 	void PickPhysicalDevice();
 	void EnumeratePhysicalDevices();
-	inline bool IsDeviceValid(VkPhysicalDevice& device);
+	inline bool IsDeviceValid(VkPhysicalDevice device);
 private:
 	GLFWwindow* m_pWindow = nullptr;
 
@@ -69,7 +70,7 @@ private:
 
 	bool CheckDeviceExtension(VkPhysicalDevice& device)const;
 
-	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& device);
+	SwapChainSupportDetails QuerySwapChainSupport(VkPhysicalDevice& device) const;
 };
 
 

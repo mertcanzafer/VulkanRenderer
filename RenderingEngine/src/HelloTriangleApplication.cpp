@@ -1,7 +1,6 @@
 #include "HelloTriangleApplication.h"
 #define STB_IMAGE_IMPLEMENTATION
 #include "stb_image.h"
-#include <cassert>
 #include "Timer.h"
 
 static VkPhysicalDeviceFeatures g_deviceFeatures = {};
@@ -215,7 +214,7 @@ void HelloTriangleApplication::PickPhysicalDevice()
 	deviceProperties.pNext = nullptr;
 	//! Validation layer triggerd when calling vkGetPhysicalDeviceProperties2 function
 	//Todo Examine the function parameters and implementation
-	assert(m_device != VK_NULL_HANDLE && "The device is not valid!!!\n");
+	ASSERT(m_device != VK_NULL_HANDLE && "The device is not valid!!!\n");
 
 	Timer t;
 	vkGetPhysicalDeviceProperties2(m_device, &deviceProperties);
@@ -225,60 +224,36 @@ void HelloTriangleApplication::PickPhysicalDevice()
 void HelloTriangleApplication::EnumeratePhysicalDevices()
 {
 	uint32_t physDevCount{ 0u };
-	//uint32_t deviceIndex = { 0u }, deviceCounter{0u};
-	
-	// ! You can switch NVIDIA to AMD by changing the DevInfo enum type
-	// ? These lines of code might be changed in the future!!
-	enum DevInfo devType = NVIDIA;
 
-	assert("Instance must be a valid VkInstance handle" && m_Instance);
+	ASSERT("Instance must be a valid VkInstance handle" && m_Instance);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr) );
 
-	assert(physDevCount != 0 && "Filed to find GPUs with Vulkan Support!!\n");
+	ASSERT(physDevCount != 0 && "Filed to find GPUs with Vulkan Support!!\n");
 
 	std::vector<VkPhysicalDevice> devices(physDevCount);
 	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()) );
 
-	switch (devType)
+	// ! You can switch NVIDIA to AMD by changing the DevInfo enum type
+	// ? These lines of code might be changed in the future!!
+	enum DevInfo devType = NVIDIA;
+
+	for (const auto& device : devices)
 	{
-	case NVIDIA: // NVIDIA GFX device!
-		if(IsDeviceValid(devices[1]))
-			m_device = devices[1];
-		break;
-	case AMD: // AMD GFX device
-		if(IsDeviceValid(devices[0]))
-			m_device = devices[0];
-		break;
+		vkGetPhysicalDeviceProperties(device, &g_deviceProperties);
+
+		if (g_deviceProperties.vendorID == devType && IsDeviceValid(device))
+		{
+			m_device = device;
+			break;
+		}
 	}
 
 	if (m_device == VK_NULL_HANDLE)
 		throw std::runtime_error("Failed to find a suitable GPU!!\n");
-
-	vkGetPhysicalDeviceProperties(m_device, &g_deviceProperties);
 	std::clog << "Device: " << g_deviceProperties.deviceName << std::endl;
-
-	//// Check If all devices are suitable
-	//for (auto &device : devices)
-	//{
-	//	if (IsDeviceValid(device) && IsVendorNVIDIA(devType))
-	//	{
-	//		m_device = device;
-	//		deviceIndex = deviceCounter;
-	//		break;
-	//	}
-	//	deviceCounter++;
-	//}
-	//if (m_device == VK_NULL_HANDLE)
-	//	throw std::runtime_error("Failed to find a suitable GPU!!");
-	//assert(deviceIndex < 2);
-	////! Extract the NVIDIA device!!!  -> devices[0] = AMD GFX device, devices[1] = NVIDIA GTX device on my computer.
-	////! This part is optional as you might want to choose a specific device for graphics render pipeline.
-	////! However, you have to update your all graphics drivers before vulkan layers start to do rendering pixels to the screen
-	//m_device = devices.at(static_cast<std::vector<VkPhysicalDevice, std::allocator<VkPhysicalDevice>>::size_type>(deviceIndex) + 1);
-	////vkGetPhysicalDeviceProperties(m_device, &g_deviceProperties);
 }
 
-inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice& device)
+inline bool HelloTriangleApplication::IsDeviceValid(VkPhysicalDevice device)
 {
 	//? If you are sure that it picks the most suitable device. Then keep the IsDevice valid function like this 
 	const QueueFamiliyIndicies indices = getFamiliyIndicies(device);
@@ -339,7 +314,7 @@ void HelloTriangleApplication::CreateLogicalDevice()
 void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 {
 	uint32_t queueFamilyCount{ 0u };
-	assert("Device must be valid device!!!" && device != VK_NULL_HANDLE);
+	ASSERT("Device must be valid device!!!" && device != VK_NULL_HANDLE);
 	vkGetPhysicalDeviceQueueFamilyProperties(device, &queueFamilyCount, nullptr);
 
 	std::vector<VkQueueFamilyProperties> properties(queueFamilyCount);
@@ -371,8 +346,8 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 
 void HelloTriangleApplication::CreateSurface()
 {
-	assert(m_Instance != VK_NULL_HANDLE && "Invalid instance!!!");
-	assert(m_pWindow != nullptr && "Window instance must not be a null ptr!!!!");
+	ASSERT(m_Instance != VK_NULL_HANDLE && "Invalid instance!!!");
+	ASSERT(m_pWindow != nullptr && "Window instance must not be a null ptr!!!!");
 	VK_EXCEPT( glfwCreateWindowSurface(m_Instance, m_pWindow, nullptr, &m_surface) );
 	// !vkSurface should be destroyed before destroying m_instance!!!
 }
@@ -381,7 +356,7 @@ bool HelloTriangleApplication::CheckDeviceExtension(VkPhysicalDevice& device) co
 {
 	uint32_t extensionCount{};
 
-	assert(device != VK_NULL_HANDLE && "Device must be valid!!");
+	ASSERT(device != VK_NULL_HANDLE && "Device must be valid!!");
 	VK_EXCEPT( vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,nullptr) );
 
 	std::vector<VkExtensionProperties> extensionProperties(extensionCount);
@@ -400,11 +375,11 @@ bool HelloTriangleApplication::CheckDeviceExtension(VkPhysicalDevice& device) co
 	return requiredExtensions.empty();
 }
 
-SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice& device)
+SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice& device) const
 {
 	SwapChainSupportDetails details = {};
 	
-	assert(m_surface != VK_NULL_HANDLE && device != VK_NULL_HANDLE &&  
+	ASSERT(m_surface != VK_NULL_HANDLE && device != VK_NULL_HANDLE &&  
 		"surface and device must be valid handles");
 	// Query capabilties of surface and device.
 	VK_EXCEPT(

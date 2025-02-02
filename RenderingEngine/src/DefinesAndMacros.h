@@ -7,6 +7,7 @@
 #include <GLFW\glfw3.h>
 
 #include <iostream>
+#include <stdio.h>
 #include <stdexcept>
 #include <cstdlib>
 #include <vector>
@@ -16,7 +17,7 @@
 #include <optional>
 #include <set>
 
-const uint32_t width = 1280u, height = 720u;
+inline constexpr uint32_t width = 1280u, height = 720u;
 
 #ifdef NDEBUG // If not in debug mode.
 const bool enableValidationLayers{ false };
@@ -55,8 +56,8 @@ static struct QueueFamiliyIndicies
 
 extern enum DevInfo
 {
-	NVIDIA = 0x00,
-	AMD = 0x01
+	NVIDIA = 0x10DE,
+	OTHER = 0x0000
 };
 
 // !Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
@@ -70,3 +71,31 @@ extern void DestroyDebugUtilsMessengerEXT(VkInstance instance, VkDebugUtilsMesse
 // !Function for loading the vkSubmitDebugUtilsMessageEXT extension function.
 extern void SubmitDebugUtilsMessageEXT(VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT* pCallbackData);
+
+
+//! ASSERTONS AND Debugging!!
+
+static void ReportAssertionFailure(const char* expr, const char* file, int line) {
+	printf("Assertion failed: %s\nFile: %s\nLine: %d\n", expr, file, line);
+	abort();
+}
+
+#if ASSERTIONS_ENABLED
+#if defined(_MSC_VER) && !defined(__clang__)
+#define _debugBreak() __debugbreak()
+#elif defined(__GNUC__) || defined(__clang__)
+#define _debugBreak() __builtin_trap()
+#else
+#define _debugBreak() (void)0
+#endif
+
+#define ASSERT(expr) \
+        do { \
+            if (!(expr)) { \
+                ReportAssertionFailure(#expr, __FILE__, __LINE__); \
+                _debugBreak(); \
+            } \
+        } while (0)
+#else
+#define ASSERT(expr) (void)0
+#endif
