@@ -16,6 +16,11 @@
 #include <vulkan\vk_enum_string_helper.h>
 #include <optional>
 #include <set>
+#include <filesystem>
+#include <fstream>
+#include <memory>
+#include <thread>
+#include <mutex>
 
 inline constexpr uint32_t width = 1280u, height = 720u;
 
@@ -26,6 +31,7 @@ const bool enableValidationLayers{ true };
 #endif
 
 // Define Macro helpers
+namespace fs = std::filesystem;
 #define VK_EXCEPT_MACRO(vk)	 if(vk != VK_SUCCESS)	throw std::runtime_error("Failed to create instance\n")
 
 #define VK_EXCEPT(vk)					\
@@ -40,24 +46,44 @@ do {									\
 	}												\
 }while(0)
 
-static struct SwapChainSupportDetails
+enum DevInfo
+{
+	NVIDIA = 0x10DE,
+	OTHERS = 0x0000
+};
+
+struct ThreadGuard
+{
+	std::thread m_thread;
+	ThreadGuard(std::thread t) :m_thread{ std::move(t) }
+	{
+		// If there is no available threads then throw an error
+		if (!m_thread.joinable())
+		{
+			throw std::logic_error("No available thread!!\n");
+		}
+	}
+
+	~ThreadGuard()
+	{
+		std::clog << "Thread destructor called\n";
+		m_thread.join();
+	}
+
+};
+
+extern struct SwapChainSupportDetails
 {
 	VkSurfaceCapabilitiesKHR capabilities;
 	std::vector<VkSurfaceFormatKHR> formats;
 	std::vector<VkPresentModeKHR> presentModes;
 };
 
-static struct QueueFamiliyIndicies
+extern struct QueueFamiliyIndicies
 {
 	std::optional<uint32_t> GraphicsFamily;
 	std::optional<uint32_t> PresentFamily;
 	bool IsComplete()const { return GraphicsFamily.has_value() && PresentFamily.has_value(); }
-};
-
-extern enum DevInfo
-{
-	NVIDIA = 0x10DE,
-	OTHER = 0x0000
 };
 
 // !Function for loading the vkCreateDebugUtilsMessengerEXT extension function.
@@ -79,6 +105,8 @@ static void ReportAssertionFailure(const char* expr, const char* file, int line)
 	printf("Assertion failed: %s\nFile: %s\nLine: %d\n", expr, file, line);
 	abort();
 }
+
+#define ASSERTIONS_ENABLED  1
 
 #if ASSERTIONS_ENABLED
 #if defined(_MSC_VER) && !defined(__clang__)

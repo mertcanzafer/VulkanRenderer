@@ -151,11 +151,13 @@
     </Link>
   </ItemDefinitionGroup>
   <ItemGroup>
+    <ClCompile Include="src\Logger.cpp" />
     <ClCompile Include="src\HelloTriangleApplication.cpp" />
     <ClCompile Include="src\Renderer.cpp" />
     <ClCompile Include="src\Timer.cpp" />
   </ItemGroup>
   <ItemGroup>
+    <ClInclude Include="src\Logger.h" />
     <ClInclude Include="src\DefinesAndMacros.h" />
     <ClInclude Include="src\HelloTriangleApplication.h" />
     <ClInclude Include="src\stb_image.h" />

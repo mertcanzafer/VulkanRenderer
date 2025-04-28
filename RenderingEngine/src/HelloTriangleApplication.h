@@ -1,5 +1,5 @@
 #pragma once
-#define ASSERTIONS_ENABLED  1
+
 #include "DefinesAndMacros.h"
 
 class HelloTriangleApplication
@@ -56,10 +56,11 @@ private:
 	VkDevice m_Ldevice;
 	void CreateLogicalDevice();
 private:
+
 	void FindQueueFamilies(VkPhysicalDevice device);
 	QueueFamiliyIndicies& getFamiliyIndicies(VkPhysicalDevice device) { FindQueueFamilies(device); return m_indicies; }
 
-	VkQueue m_graphicsQueue,m_presentQueue;
+	VkQueue m_graphicsQueue, m_presentQueue;
 	VkSurfaceKHR m_surface = VK_NULL_HANDLE;
 	void CreateSurface();
 

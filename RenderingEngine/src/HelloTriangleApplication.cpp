@@ -18,7 +18,7 @@ void HelloTriangleApplication::Run()
 void HelloTriangleApplication::InitWindow()
 {
 	if (!glfwInit())
-	{	
+	{
 		glfwTerminate();
 		throw std::exception("GLFW initialised failed!!!\n");
 	}
@@ -96,7 +96,7 @@ void HelloTriangleApplication::CreateVinstance()
 	appInfo.apiVersion = VK_API_VERSION_1_1;
 	appInfo.pApplicationName = "Hello Triangle";
 	appInfo.pEngineName = "No Engine";
-	appInfo.engineVersion = VK_MAKE_VERSION( 1,0,0 );
+	appInfo.engineVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.applicationVersion = VK_MAKE_VERSION(1, 0, 0);
 	appInfo.sType = VK_STRUCTURE_TYPE_APPLICATION_INFO;
 	appInfo.pNext = nullptr;
@@ -107,7 +107,7 @@ void HelloTriangleApplication::CreateVinstance()
 	instInfo.sType = VK_STRUCTURE_TYPE_INSTANCE_CREATE_INFO;
 	instInfo.pApplicationInfo = &appInfo;
 
-;	auto extensions = GetRequiredExtensions();
+	;	auto extensions = GetRequiredExtensions();
 	instInfo.enabledExtensionCount = static_cast<uint32_t> (extensions.size());
 	instInfo.ppEnabledExtensionNames = extensions.data();
 
@@ -129,17 +129,17 @@ void HelloTriangleApplication::CreateVinstance()
 	}
 
 	// Creating the instance with given info
-	VK_EXCEPT( vkCreateInstance(&instInfo, nullptr, &m_Instance) );
+	VK_EXCEPT(vkCreateInstance(&instInfo, nullptr, &m_Instance));
 }
 
 bool HelloTriangleApplication::CheckValidationLayerSupport()
 {
 	uint32_t layerCount{ 0u };
 
-	VK_EXCEPT( vkEnumerateInstanceLayerProperties(&layerCount, nullptr) );
-	
+	VK_EXCEPT(vkEnumerateInstanceLayerProperties(&layerCount, nullptr));
+
 	std::vector<VkLayerProperties> availableLayers(layerCount);
-	VK_EXCEPT( vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()) );
+	VK_EXCEPT(vkEnumerateInstanceLayerProperties(&layerCount, availableLayers.data()));
 	/*
 	* Check if all check if all of the layers in validationLayers exist in the availableLayers list.
 	* if not return false
@@ -184,9 +184,9 @@ std::vector<const char*> HelloTriangleApplication::GetRequiredExtensions()
 VKAPI_ATTR VkBool32 VKAPI_CALL HelloTriangleApplication::
 DebugCallback
 (
-	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
-	VkDebugUtilsMessageTypeFlagsEXT messageType, 
-	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData, 
+	VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
+	VkDebugUtilsMessageTypeFlagsEXT messageType,
+	const VkDebugUtilsMessengerCallbackDataEXT* pCallbackData,
 	void* pUserData
 )
 {
@@ -202,7 +202,7 @@ void HelloTriangleApplication::SetupDebugMessenger()
 	// Populate MessengerCreateInfo
 	PopulateDebugMessengerCreateInfo(msgCreateInfo);
 
-	VK_EXCEPT( CreateDebugUtilsMessengerEXT(m_Instance,&msgCreateInfo,nullptr,&m_Dmessenger) );
+	VK_EXCEPT(CreateDebugUtilsMessengerEXT(m_Instance, &msgCreateInfo, nullptr, &m_Dmessenger));
 }
 
 void HelloTriangleApplication::PickPhysicalDevice()
@@ -226,12 +226,13 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	uint32_t physDevCount{ 0u };
 
 	ASSERT("Instance must be a valid VkInstance handle" && m_Instance);
-	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr) );
+	VK_EXCEPT(vkEnumeratePhysicalDevices(m_Instance, &physDevCount, nullptr));
 
 	ASSERT(physDevCount != 0 && "Filed to find GPUs with Vulkan Support!!\n");
 
-	std::vector<VkPhysicalDevice> devices(physDevCount);
-	VK_EXCEPT( vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()) );
+	std::vector<VkPhysicalDevice> devices;
+	devices.resize(physDevCount);
+	VK_EXCEPT(vkEnumeratePhysicalDevices(m_Instance, &physDevCount, devices.data()));
 
 	// ! You can switch NVIDIA to AMD by changing the DevInfo enum type
 	// ? These lines of code might be changed in the future!!
@@ -249,7 +250,11 @@ void HelloTriangleApplication::EnumeratePhysicalDevices()
 	}
 
 	if (m_device == VK_NULL_HANDLE)
+	{
+		
 		throw std::runtime_error("Failed to find a suitable GPU!!\n");
+	}
+
 	std::clog << "Device: " << g_deviceProperties.deviceName << std::endl;
 }
 
@@ -305,7 +310,7 @@ void HelloTriangleApplication::CreateLogicalDevice()
 	else
 		CreateInfo.enabledLayerCount = 0u;
 
-	VK_EXCEPT( vkCreateDevice(m_device, &CreateInfo, nullptr, &m_Ldevice) );
+	VK_EXCEPT(vkCreateDevice(m_device, &CreateInfo, nullptr, &m_Ldevice));
 
 	vkGetDeviceQueue(m_Ldevice, indices.GraphicsFamily.value(), 0u, &m_graphicsQueue);
 	vkGetDeviceQueue(m_Ldevice, indices.PresentFamily.value(), 0u, &m_presentQueue);
@@ -329,7 +334,7 @@ void HelloTriangleApplication::FindQueueFamilies(VkPhysicalDevice device)
 			m_indicies.GraphicsFamily = i;
 		}
 		presentSupport = false;
-		VK_EXCEPT( vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport) );
+		VK_EXCEPT(vkGetPhysicalDeviceSurfaceSupportKHR(device, i, m_surface, &presentSupport));
 
 		if (presentSupport)
 		{
@@ -348,7 +353,7 @@ void HelloTriangleApplication::CreateSurface()
 {
 	ASSERT(m_Instance != VK_NULL_HANDLE && "Invalid instance!!!");
 	ASSERT(m_pWindow != nullptr && "Window instance must not be a null ptr!!!!");
-	VK_EXCEPT( glfwCreateWindowSurface(m_Instance, m_pWindow, nullptr, &m_surface) );
+	VK_EXCEPT(glfwCreateWindowSurface(m_Instance, m_pWindow, nullptr, &m_surface));
 	// !vkSurface should be destroyed before destroying m_instance!!!
 }
 
@@ -357,7 +362,7 @@ bool HelloTriangleApplication::CheckDeviceExtension(VkPhysicalDevice& device) co
 	uint32_t extensionCount{};
 
 	ASSERT(device != VK_NULL_HANDLE && "Device must be valid!!");
-	VK_EXCEPT( vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount,nullptr) );
+	VK_EXCEPT(vkEnumerateDeviceExtensionProperties(device, nullptr, &extensionCount, nullptr));
 
 	std::vector<VkExtensionProperties> extensionProperties(extensionCount);
 	uint32_t propertiesCount = (uint32_t)extensionProperties.size();
@@ -378,8 +383,8 @@ bool HelloTriangleApplication::CheckDeviceExtension(VkPhysicalDevice& device) co
 SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysicalDevice& device) const
 {
 	SwapChainSupportDetails details = {};
-	
-	ASSERT(m_surface != VK_NULL_HANDLE && device != VK_NULL_HANDLE &&  
+
+	ASSERT(m_surface != VK_NULL_HANDLE && device != VK_NULL_HANDLE &&
 		"surface and device must be valid handles");
 	// Query capabilties of surface and device.
 	VK_EXCEPT(
@@ -415,12 +420,12 @@ SwapChainSupportDetails HelloTriangleApplication::QuerySwapChainSupport(VkPhysic
 
 VkResult CreateDebugUtilsMessengerEXT
 (
-	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo, 
+	VkInstance instance, const VkDebugUtilsMessengerCreateInfoEXT* pCreateInfo,
 	const VkAllocationCallbacks* pAllocator, VkDebugUtilsMessengerEXT* pDebugMessenger
 )
 {
 	// - vkGetInstanceProcAddr will return nullptr, if the function couldn't be loaded
-	auto func = (PFN_vkCreateDebugUtilsMessengerEXT) vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
+	auto func = (PFN_vkCreateDebugUtilsMessengerEXT)vkGetInstanceProcAddr(instance, "vkCreateDebugUtilsMessengerEXT");
 	if (func)
 	{
 		return func(instance, pCreateInfo, pAllocator, pDebugMessenger);
@@ -444,18 +449,18 @@ void DestroyDebugUtilsMessengerEXT
 
 void SubmitDebugUtilsMessageEXT
 (
-	VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity, 
+	VkInstance instance, VkDebugUtilsMessageSeverityFlagBitsEXT messageSeverity,
 	VkDebugUtilsMessageTypeFlagsEXT messageType, VkDebugUtilsMessengerCallbackDataEXT* pCallbackData)
 {
 
-	auto func =(PFN_vkSubmitDebugUtilsMessageEXT) vkGetInstanceProcAddr(instance, "vkSubmitDebugUtilsMessageEXT");
+	auto func = (PFN_vkSubmitDebugUtilsMessageEXT)vkGetInstanceProcAddr(instance, "vkSubmitDebugUtilsMessageEXT");
 
 	if (func)
 		func(instance, messageSeverity, messageType, pCallbackData);
 	return;
 }
 
-void HelloTriangleApplication:: PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& DbgCrtInfo)
+void HelloTriangleApplication::PopulateDebugMessengerCreateInfo(VkDebugUtilsMessengerCreateInfoEXT& DbgCrtInfo)
 {
 	DbgCrtInfo.sType = VK_STRUCTURE_TYPE_DEBUG_UTILS_MESSENGER_CREATE_INFO_EXT;
 	DbgCrtInfo.pNext = nullptr;
